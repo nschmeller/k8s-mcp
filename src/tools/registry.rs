@@ -155,55 +155,6 @@ impl Default for ToolRegistry {
     }
 }
 
-/// Helper macro to create tool input schemas.
-#[macro_export]
-macro_rules! tool_schema {
-    () => {
-        ToolInputSchema::object()
-    };
-    ($($name:expr => $prop:expr),+ $(,)?) => {
-        ToolInputSchema::object()
-            .with_properties(
-                std::collections::HashMap::from([
-                    $(($name.to_string(), $prop)),+
-                ])
-            )
-    };
-}
-
-/// Helper macro to create string property.
-#[macro_export]
-macro_rules! prop_string {
-    () => {
-        $crate::mcp::protocol::PropertySchema::string()
-    };
-    ($desc:expr) => {
-        $crate::mcp::protocol::PropertySchema::string().description($desc)
-    };
-}
-
-/// Helper macro to create integer property.
-#[macro_export]
-macro_rules! prop_integer {
-    () => {
-        $crate::mcp::protocol::PropertySchema::integer()
-    };
-    ($desc:expr) => {
-        $crate::mcp::protocol::PropertySchema::integer().description($desc)
-    };
-}
-
-/// Helper macro to create boolean property.
-#[macro_export]
-macro_rules! prop_boolean {
-    () => {
-        $crate::mcp::protocol::PropertySchema::boolean()
-    };
-    ($desc:expr) => {
-        $crate::mcp::protocol::PropertySchema::boolean().description($desc)
-    };
-}
-
 /// Helper to extract a string argument.
 pub fn get_string_arg(args: &HashMap<String, Value>, name: &str) -> Result<String> {
     args.get(name)

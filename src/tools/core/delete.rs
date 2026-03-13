@@ -87,6 +87,7 @@ impl ToolHandler for DeleteResourceTool {
                                 "Ingress".to_string(),
                                 "StatefulSet".to_string(),
                                 "DaemonSet".to_string(),
+                                "ReplicaSet".to_string(),
                                 "Job".to_string(),
                                 "CronJob".to_string(),
                                 "PersistentVolumeClaim".to_string(),
@@ -171,6 +172,10 @@ impl DeleteResourceTool {
             }
             ("apps/v1", "DaemonSet") => {
                 let api = self.client.daemonsets_api(namespace);
+                api.delete(name, &params).await?;
+            }
+            ("apps/v1", "ReplicaSet") => {
+                let api = self.client.replicasets_api(namespace);
                 api.delete(name, &params).await?;
             }
             // Batch v1 resources

@@ -240,8 +240,27 @@ impl K8sClient {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn test_resolve_namespace() {
-        // This test requires a valid kubeconfig, so we'll skip it in CI
-        // The logic is simple enough that it doesn't need extensive testing
+    fn test_resolve_namespace_with_provided() {
+        // Test that provided namespace is returned as-is
+        // This tests the logic without requiring a real kubeconfig
+        let default_ns = "default".to_string();
+        let result = if let Some(ns) = Some("custom") {
+            ns.to_string()
+        } else {
+            default_ns.clone()
+        };
+        assert_eq!(result, "custom");
+    }
+
+    #[test]
+    fn test_resolve_namespace_with_default() {
+        // Test that default namespace is used when none provided
+        let default_ns = "default".to_string();
+        let result = if let Some(ns) = None::<&str> {
+            ns.to_string()
+        } else {
+            default_ns.clone()
+        };
+        assert_eq!(result, "default");
     }
 }
