@@ -4,7 +4,7 @@ use crate::error::Result;
 use crate::format::OutputFormat;
 use crate::k8s::K8sClient;
 use crate::mcp::protocol::{CallToolResult, PropertySchema, Tool, ToolInputSchema};
-use crate::tools::registry::{get_optional_string_arg, text_result, ToolHandler};
+use crate::tools::registry::{get_optional_integer_arg, get_optional_string_arg, text_result, ToolHandler};
 use async_trait::async_trait;
 use kube::api::ListParams;
 use serde_json::json;
@@ -31,7 +31,7 @@ impl ToolHandler for ListResourcesTool {
         let namespace = get_optional_string_arg(&args, "namespace");
         let label_selector = get_optional_string_arg(&args, "labelSelector");
         let field_selector = get_optional_string_arg(&args, "fieldSelector");
-        let limit = get_optional_string_arg(&args, "limit").and_then(|l| l.parse::<u32>().ok());
+        let limit = get_optional_integer_arg(&args, "limit").map(|l| l as u32);
         let output_format = get_optional_string_arg(&args, "output")
             .map(|o| OutputFormat::from(o.as_str()))
             .unwrap_or(OutputFormat::Table);
