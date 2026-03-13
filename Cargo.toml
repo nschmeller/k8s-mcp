@@ -1,0 +1,75 @@
+[package]
+name = "k8s-mcp"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.81"
+description = "Kubernetes MCP Server - Feature complete as kubectl"
+license = "Apache-2.0"
+repository = "https://github.com/lacework/k8s-mcp"
+
+[features]
+default = ["k8s-v1_32"]
+k8s-v1_31 = ["k8s-openapi/v1_31"]
+k8s-v1_32 = ["k8s-openapi/v1_32"]
+k8s-v1_33 = ["k8s-openapi/v1_33"]
+
+[dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
+tokio-util = { version = "0.7", features = ["io", "codec"] }
+futures = "0.3"
+async-trait = "0.1"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+
+# Kubernetes
+kube = { version = "3", features = ["runtime", "derive", "client", "ws", "oidc", "gzip"] }
+k8s-openapi = { version = "0.27", default-features = false }
+
+# HTTP
+http = "1"
+
+# MCP Protocol
+schemars = "1"
+
+# Error handling
+thiserror = "2"
+anyhow = "1"
+either = "1"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# CLI
+clap = { version = "4", features = ["derive", "env"] }
+
+# Table formatting
+comfy-table = "7"
+
+# Time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# Base64 for exec
+base64 = "0.22"
+
+# Directory for home directory
+dirs = "6"
+
+# JSON Patch support
+json-patch = "4"
+
+[dev-dependencies]
+tokio-test = "0.4"
+mockall = "0.14"
+tempfile = "3"
+ctor = "0.4"
+
+[profile.release]
+lto = true
+strip = true
+opt-level = 3
