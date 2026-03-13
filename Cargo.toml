@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.81"
 description = "Kubernetes MCP Server - Feature complete as kubectl"
-license = "Apache-2.0"
-repository = "https://github.com/lacework/k8s-mcp"
+license = "MIT"
+repository = "https://github.com/nschmeller/k8s-mcp"
 
 [features]
 default = ["k8s-v1_32"]
