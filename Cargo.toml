@@ -12,6 +12,8 @@ default = ["k8s-v1_32"]
 k8s-v1_31 = ["k8s-openapi/v1_31"]
 k8s-v1_32 = ["k8s-openapi/v1_32"]
 k8s-v1_33 = ["k8s-openapi/v1_33"]
+k8s-v1_34 = ["k8s-openapi/v1_34"]
+k8s-v1_35 = ["k8s-openapi/v1_35"]
 
 [dependencies]
 # Async runtime
