@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+# Git hook to enforce trailing newlines in all text files
+#
+
+exit_code=0
+
+# Get all tracked files that are staged for commit
+while IFS= read -r -d '' file; do
+    # Skip binary files and non-regular files
+    if [ ! -f "$file" ]; then
+        continue
+    fi
+
+    # Check if file is text (skip binary files)
+    if file "$file" | grep -q "text"; then
+        # Check if file ends with a newline
+        if [ "$(tail -c 1 "$file" | wc -l)" -eq 0 ]; then
+            echo "ERROR: File missing trailing newline: $file"
+            exit_code=1
+        fi
+    fi
+done < <(git diff --cached --name-only -z)
+
+if [ $exit_code -ne 0 ]; then
+    echo ""
+    echo "Please add a trailing newline to the files listed above."
+    echo "You can fix all files with:"
+    echo "  for f in \$(git diff --cached --name-only); do echo '' >> \"\$f\"; done"
+fi
+
+exit $exit_code
