@@ -14,19 +14,22 @@ A Kubernetes MCP (Model Context Protocol) server for Claude Code. This server pr
 
 ## Installation
 
+### From crates.io (Recommended)
+
+```bash
+cargo install k8s-mcp
+```
+
 ### From Source
 
 ```bash
 git clone https://github.com/nschmeller/k8s-mcp.git
 cd k8s-mcp
-cargo build --release
+cargo install --path .
 ```
-
-The binary will be at `target/release/k8s-mcp`.
 
 ### Prerequisites
 
-- Rust 1.81 or later
 - A valid kubeconfig file (default location: `~/.kube/config`)
 - Access to a Kubernetes cluster
 
@@ -57,75 +60,39 @@ Options:
 
 ## Configuring with Claude Code
 
-### Option 1: Add as a stdio MCP server (Recommended)
-
-Add k8s-mcp to Claude Code using the CLI:
+After installing with `cargo install k8s-mcp`, add it to Claude Code:
 
 ```bash
-# Read-only mode (default, safe for production)
-claude mcp add --transport stdio k8s-mcp -- /path/to/k8s-mcp
-
-# With a specific kubeconfig
-claude mcp add --transport stdio --env KUBECONFIG=/path/to/kubeconfig k8s-mcp -- /path/to/k8s-mcp
-
-# With read-write mode enabled
-claude mcp add --transport stdio --env K8S_MCP_READ_WRITE=true k8s-mcp -- /path/to/k8s-mcp
-
-# With a specific Kubernetes context
-claude mcp add --transport stdio --env K8S_CONTEXT=my-context k8s-mcp -- /path/to/k8s-mcp
+claude mcp add k8s-mcp -- k8s-mcp
 ```
 
-Replace `/path/to/k8s-mcp` with the actual path to the binary. For example:
+That's it! The server will run in read-only mode by default.
+
+### Read-Write Mode
+
+To enable mutations (create, update, delete):
 
 ```bash
-# If built from source in ~/projects/k8s-mcp
-claude mcp add --transport stdio k8s-mcp -- ~/projects/k8s-mcp/target/release/k8s-mcp
-
-# If installed system-wide
-claude mcp add --transport stdio k8s-mcp -- /usr/local/bin/k8s-mcp
+claude mcp add -e K8S_MCP_READ_WRITE=true k8s-mcp -- k8s-mcp
 ```
 
-### Option 2: Configure via `.mcp.json` (Project-level)
+### With Specific Context
 
-Create a `.mcp.json` file in your project root:
+To use a specific Kubernetes context:
+
+```bash
+claude mcp add -e K8S_CONTEXT=my-cluster k8s-mcp -- k8s-mcp
+```
+
+### Manual Configuration
+
+If you need to configure manually, add to `~/.claude.json`:
 
 ```json
 {
   "mcpServers": {
     "k8s-mcp": {
-      "command": "/path/to/k8s-mcp",
-      "args": [],
-      "env": {
-        "KUBECONFIG": "${HOME}/.kube/config"
-      }
-    }
-  }
-}
-```
-
-For read-write mode:
-
-```json
-{
-  "mcpServers": {
-    "k8s-mcp": {
-      "command": "/path/to/k8s-mcp",
-      "args": ["--read-write"],
-      "env": {}
-    }
-  }
-}
-```
-
-### Option 3: User-level configuration
-
-Add to `~/.claude.json` under the `mcpServers` key:
-
-```json
-{
-  "mcpServers": {
-    "k8s-mcp": {
-      "command": "/path/to/k8s-mcp",
+      "command": "k8s-mcp",
       "args": [],
       "env": {}
     }
