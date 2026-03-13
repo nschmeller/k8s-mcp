@@ -1,6 +1,6 @@
 # k8s-mcp
 
-A Kubernetes MCP (Model Context Protocol) server for Claude Code. This server provides Claude with tools to interact with Kubernetes clusters, similar to kubectl.
+A Kubernetes MCP (Model Context Protocol) server for Claude Code. This server provides Claude with tools to interact with Kubernetes clusters, similar to `kubectl`.
 
 ## Features
 
