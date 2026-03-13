@@ -3,7 +3,7 @@
 use crate::error::Result;
 use crate::k8s::{K8sClient, K8sConfig};
 use crate::mcp::protocol::{CallToolResult, PropertySchema, Tool, ToolInputSchema};
-use crate::tools::registry::{text_result, ToolHandler};
+use crate::tools::registry::{ToolHandler, text_result};
 use async_trait::async_trait;
 use comfy_table::{Cell, Table};
 use serde_json::json;

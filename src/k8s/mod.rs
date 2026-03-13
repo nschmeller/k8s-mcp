@@ -13,4 +13,4 @@ pub use client::K8sClient;
 pub use config::{ContextInfo, K8sConfig};
 pub use discovery::{ApiDiscovery, ApiResourceInfo};
 pub use metrics::{MetricsClient, NodeMetrics, PodMetrics};
-pub use resources::{parse_api_version, parse_gvk, DynamicResource, PatchStrategy};
+pub use resources::{DynamicResource, PatchStrategy, parse_api_version, parse_gvk};

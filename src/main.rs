@@ -4,14 +4,14 @@
 
 use clap::Parser;
 use k8s_mcp::{
+    ToolRegistry,
     k8s::{ApiDiscovery, K8sClient, K8sConfig},
     mcp::run_server,
     tools::register_all_tools,
-    ToolRegistry,
 };
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{info, Level};
+use tracing::{Level, info};
 use tracing_subscriber::FmtSubscriber;
 
 /// Kubernetes MCP Server - Feature complete as kubectl.

@@ -132,7 +132,11 @@ impl McpServer {
             server_info: self.server_info.clone(),
             instructions: Some(format!(
                 "Kubernetes MCP Server - Read-only mode: {}. Use tools to interact with your Kubernetes cluster.",
-                if self.read_write { "disabled" } else { "enabled" }
+                if self.read_write {
+                    "disabled"
+                } else {
+                    "enabled"
+                }
             )),
         };
 

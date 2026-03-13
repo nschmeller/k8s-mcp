@@ -7,5 +7,5 @@ pub mod server;
 pub mod transport;
 
 pub use protocol::*;
-pub use server::{run_server, McpServer};
+pub use server::{McpServer, run_server};
 pub use transport::{StdioTransport, SyncStdioTransport, Transport};

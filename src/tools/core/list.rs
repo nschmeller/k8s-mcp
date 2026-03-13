@@ -5,7 +5,7 @@ use crate::format::OutputFormat;
 use crate::k8s::K8sClient;
 use crate::mcp::protocol::{CallToolResult, PropertySchema, Tool, ToolInputSchema};
 use crate::tools::registry::{
-    get_optional_integer_arg, get_optional_string_arg, text_result, ToolHandler,
+    ToolHandler, get_optional_integer_arg, get_optional_string_arg, text_result,
 };
 use async_trait::async_trait;
 use kube::api::ListParams;

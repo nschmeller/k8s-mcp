@@ -19,7 +19,7 @@
 //! ```
 
 use crate::error::Result;
-use kube::{discovery::Scope, Client, Discovery};
+use kube::{Client, Discovery, discovery::Scope};
 use std::collections::HashMap;
 use tracing::info;
 

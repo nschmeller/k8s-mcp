@@ -2,7 +2,7 @@
 
 #![allow(dead_code)]
 
-use k8s_mcp::mcp::{protocol::*, McpServer};
+use k8s_mcp::mcp::{McpServer, protocol::*};
 use k8s_mcp::tools::ToolRegistry;
 use serde_json::json;
 
@@ -158,10 +158,12 @@ async fn test_handle_resources_list() {
 
     let response_json: serde_json::Value = serde_json::from_str(&response.unwrap()).unwrap();
     assert!(response_json["result"]["resources"].is_array());
-    assert!(response_json["result"]["resources"]
-        .as_array()
-        .unwrap()
-        .is_empty());
+    assert!(
+        response_json["result"]["resources"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
 }
 
 #[tokio::test]
@@ -297,8 +299,10 @@ async fn test_instructions_in_response() {
 
     assert!(response_json["result"]["instructions"].is_string());
     // Should mention read-only mode
-    assert!(response_json["result"]["instructions"]
-        .as_str()
-        .unwrap()
-        .contains("Read-only"));
+    assert!(
+        response_json["result"]["instructions"]
+            .as_str()
+            .unwrap()
+            .contains("Read-only")
+    );
 }

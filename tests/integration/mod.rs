@@ -7,10 +7,10 @@ pub mod kind;
 mod test_mcp_protocol;
 mod test_resource_operations;
 
+use k8s_mcp::ToolRegistry;
 use k8s_mcp::k8s::{ApiDiscovery, K8sClient, K8sConfig};
 use k8s_mcp::mcp::McpServer;
 use k8s_mcp::tools::register_all_tools;
-use k8s_mcp::ToolRegistry;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 

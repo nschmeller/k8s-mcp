@@ -3,10 +3,10 @@
 use async_trait::async_trait;
 use k8s_mcp::mcp::protocol::{CallToolResult, Tool, ToolInputSchema};
 use k8s_mcp::tools::registry::{
-    error_result, get_boolean_arg, get_integer_arg, get_optional_integer_arg,
-    get_optional_string_arg, get_string_arg, text_result, ToolHandler, ToolRegistry,
+    ToolHandler, ToolRegistry, error_result, get_boolean_arg, get_integer_arg,
+    get_optional_integer_arg, get_optional_string_arg, get_string_arg, text_result,
 };
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 
 /// A simple test tool for registry tests.

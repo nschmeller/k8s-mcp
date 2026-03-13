@@ -750,12 +750,11 @@ fn get_pod_status(pod: &Pod) -> String {
     // Check for terminated state first
     if let Some(container_statuses) = status.and_then(|s| s.container_statuses.as_ref()) {
         for cs in container_statuses {
-            if let Some(state) = &cs.state {
-                if let Some(terminated) = &state.terminated {
-                    if terminated.exit_code != 0 {
-                        return format!("Error:{}", terminated.exit_code);
-                    }
-                }
+            if let Some(state) = &cs.state
+                && let Some(terminated) = &state.terminated
+                && terminated.exit_code != 0
+            {
+                return format!("Error:{}", terminated.exit_code);
             }
         }
     }
@@ -812,10 +811,10 @@ fn get_node_roles(node: &Node) -> String {
                 if key.starts_with("node-role.kubernetes.io/") {
                     roles.push(key.trim_start_matches("node-role.kubernetes.io/"));
                 }
-                if key == "kubernetes.io/role" {
-                    if let Some(value) = labels.get(key) {
-                        roles.push(value);
-                    }
+                if key == "kubernetes.io/role"
+                    && let Some(value) = labels.get(key)
+                {
+                    roles.push(value);
                 }
             }
             if roles.is_empty() {

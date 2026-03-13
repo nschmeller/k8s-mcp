@@ -1,6 +1,6 @@
 //! Unit tests for k8s/resources.rs.
 
-use k8s_mcp::k8s::{parse_api_version, parse_gvk, PatchStrategy};
+use k8s_mcp::k8s::{PatchStrategy, parse_api_version, parse_gvk};
 use serde_json::json;
 
 #[test]

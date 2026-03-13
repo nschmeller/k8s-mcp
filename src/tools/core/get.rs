@@ -3,7 +3,7 @@
 use crate::error::{Error, Result};
 use crate::k8s::K8sClient;
 use crate::mcp::protocol::{CallToolResult, PropertySchema, Tool, ToolInputSchema};
-use crate::tools::registry::{get_optional_string_arg, get_string_arg, text_result, ToolHandler};
+use crate::tools::registry::{ToolHandler, get_optional_string_arg, get_string_arg, text_result};
 use async_trait::async_trait;
 use serde_json::json;
 use std::collections::HashMap;

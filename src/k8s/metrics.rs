@@ -3,7 +3,7 @@
 use crate::error::{Error, Result};
 use crate::k8s::client::K8sClient;
 use k8s_openapi::api::core::v1::{Node, Pod};
-use kube::{api::ListParams, Api, ResourceExt};
+use kube::{Api, ResourceExt, api::ListParams};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tracing::{debug, warn};

@@ -7,5 +7,5 @@ pub mod mcp;
 pub mod tools;
 
 pub use error::{Error, Result};
-pub use mcp::{run_server, McpServer};
+pub use mcp::{McpServer, run_server};
 pub use tools::ToolRegistry;

@@ -1,10 +1,10 @@
 //! Events tool implementation.
 
 use crate::error::Result;
-use crate::format::{format_events_table, OutputFormat};
+use crate::format::{OutputFormat, format_events_table};
 use crate::k8s::K8sClient;
 use crate::mcp::protocol::{CallToolResult, PropertySchema, Tool, ToolInputSchema};
-use crate::tools::registry::{get_optional_string_arg, text_result, ToolHandler};
+use crate::tools::registry::{ToolHandler, get_optional_string_arg, text_result};
 use async_trait::async_trait;
 use kube::api::ListParams;
 use std::collections::HashMap;
