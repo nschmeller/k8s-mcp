@@ -37,7 +37,7 @@ cargo install --path .
 
 ### Command Line Options
 
-```
+```text
 k8s-mcp [OPTIONS]
 
 Options:
@@ -63,7 +63,7 @@ Options:
 After installing with `cargo install k8s-mcp`, add it to Claude Code:
 
 ```bash
-claude mcp add k8s-mcp -- k8s-mcp
+claude mcp add kubernetes -- k8s-mcp
 ```
 
 That's it! The server will run in read-only mode by default.
@@ -73,7 +73,7 @@ That's it! The server will run in read-only mode by default.
 To enable mutations (create, update, delete):
 
 ```bash
-claude mcp add -e K8S_MCP_READ_WRITE=true k8s-mcp -- k8s-mcp
+claude mcp add -e K8S_MCP_READ_WRITE=true kubernetes -- k8s-mcp
 ```
 
 ### With Specific Context
@@ -81,7 +81,7 @@ claude mcp add -e K8S_MCP_READ_WRITE=true k8s-mcp -- k8s-mcp
 To use a specific Kubernetes context:
 
 ```bash
-claude mcp add -e K8S_CONTEXT=my-cluster k8s-mcp -- k8s-mcp
+claude mcp add -e K8S_CONTEXT=my-cluster kubernetes -- k8s-mcp
 ```
 
 ### Manual Configuration
@@ -91,7 +91,7 @@ If you need to configure manually, add to `~/.claude.json`:
 ```json
 {
   "mcpServers": {
-    "k8s-mcp": {
+    "kubernetes": {
       "command": "k8s-mcp",
       "args": [],
       "env": {}
@@ -146,27 +146,27 @@ If you need to configure manually, add to `~/.claude.json`:
 
 Once configured, you can ask Claude to interact with your Kubernetes cluster:
 
-```
+```text
 List all pods in the default namespace
 ```
 
-```
+```text
 Show me the logs from the nginx pod
 ```
 
-```
+```text
 What's the resource usage across all nodes?
 ```
 
-```
+```text
 Get the details of the deployment named "api-server" in the "production" namespace
 ```
 
-```
+```text
 List all events in the last hour
 ```
 
-```
+```text
 Switch to the production context and show me all deployments
 ```
 
