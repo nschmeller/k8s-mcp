@@ -1,0 +1,17 @@
+# nektos/act configuration for local CI testing
+# https://github.com/nektos/act
+
+# Use node image for GitHub Actions compatibility (node 20 for newer actions)
+-P ubuntu-latest=node:20-bullseye
+
+# Use amd64 architecture for container
+--container-architecture linux/amd64
+
+# Don't pull images if they exist locally
+--pull=false
+
+# Enable verbose output
+# -v
+
+# Secrets file (create .secrets if needed)
+# --secret-file .secrets
