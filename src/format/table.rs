@@ -60,24 +60,20 @@ pub fn format_deployments_table(deployments: &[Deployment]) -> String {
             deploy
                 .status
                 .as_ref()
-                .map(|s| s.ready_replicas.unwrap_or(0))
-                .unwrap_or(0),
+                .map_or(0, |s| s.ready_replicas.unwrap_or(0)),
             deploy
                 .status
                 .as_ref()
-                .map(|s| s.replicas.unwrap_or(0))
-                .unwrap_or(0)
+                .map_or(0, |s| s.replicas.unwrap_or(0))
         );
         let up_to_date = deploy
             .status
             .as_ref()
-            .map(|s| s.updated_replicas.unwrap_or(0))
-            .unwrap_or(0);
+            .map_or(0, |s| s.updated_replicas.unwrap_or(0));
         let available = deploy
             .status
             .as_ref()
-            .map(|s| s.available_replicas.unwrap_or(0))
-            .unwrap_or(0);
+            .map_or(0, |s| s.available_replicas.unwrap_or(0));
         let age = get_age(deploy.metadata.creation_timestamp.as_ref());
         let namespace = deploy.namespace().unwrap_or_default();
 

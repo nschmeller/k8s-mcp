@@ -38,7 +38,7 @@ impl ToolHandler for PodsLogsTool {
         let api = self.client.pods_api(namespace.as_deref());
 
         let log_params = LogParams {
-            container: container.clone(),
+            container,
             tail_lines,
             since_seconds,
             previous,

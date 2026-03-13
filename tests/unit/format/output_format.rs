@@ -44,7 +44,7 @@ fn test_output_format_equality() {
 #[test]
 fn test_output_format_clone() {
     let format = OutputFormat::Json;
-    let cloned = format.clone();
+    let cloned = format;
     assert_eq!(format, cloned);
 }
 

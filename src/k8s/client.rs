@@ -46,11 +46,11 @@ impl K8sClient {
                 .unwrap_or_else(|| "default".to_string());
 
             let options = config.kubeconfig_options();
-            let kube_config = Config::from_custom_kubeconfig(kubeconfig, &options)
+            let config = Config::from_custom_kubeconfig(kubeconfig, &options)
                 .await
                 .map_err(|e| Error::Config(format!("Failed to create kube config: {}", e)))?;
 
-            let client = Client::try_from(kube_config)
+            let client = Client::try_from(config)
                 .map_err(|e| Error::Config(format!("Failed to create client: {}", e)))?;
 
             (client, default_namespace, current_context)

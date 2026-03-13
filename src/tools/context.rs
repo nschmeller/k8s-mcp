@@ -163,7 +163,7 @@ impl ToolHandler for ConfigurationViewTool {
     fn definition(&self) -> Tool {
         Tool::new(
             "configuration_view",
-            "Get the current Kubernetes configuration content as a kubeconfig YAML",
+            "Get the current Kubernetes configuration content as a kubeconfig YAML. WARNING: This may expose sensitive credentials including certificates, tokens, and passwords. Use minified mode (default) to reduce exposure, and never share the output with untrusted parties.",
             ToolInputSchema::object()
                 .with_properties(HashMap::from([
                     ("minified".to_string(), PropertySchema::boolean()
