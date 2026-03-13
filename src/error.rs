@@ -1,0 +1,184 @@
+//! Error types for the Kubernetes MCP server.
+//!
+//! This module provides a comprehensive error type that covers all possible
+//! error conditions in the k8s-mcp server.
+//!
+//! # Example
+//!
+//! ```
+//! use k8s_mcp::error::{Error, Result};
+//!
+//! fn might_fail() -> Result<()> {
+//!     Err(Error::Config("test error".to_string()))
+//! }
+//!
+//! let result = might_fail();
+//! assert!(result.is_err());
+//! ```
+
+use thiserror::Error;
+
+/// Main error type for the k8s-mcp server.
+///
+/// This enum covers all possible error conditions including:
+/// - MCP protocol errors
+/// - JSON-RPC errors with standard codes
+/// - Kubernetes API errors
+/// - Configuration errors
+/// - IO errors
+///
+/// # Example
+///
+/// ```
+/// use k8s_mcp::error::Error;
+///
+/// let err = Error::json_rpc_invalid_params("Missing parameter");
+/// assert_eq!(err.json_rpc_code(), -32602);
+/// ```
+#[derive(Error, Debug)]
+pub enum Error {
+    /// MCP protocol errors
+    #[error("MCP protocol error: {0}")]
+    Protocol(String),
+
+    /// JSON-RPC errors
+    #[error("JSON-RPC error: code={code}, message={message}")]
+    JsonRpc {
+        code: i32,
+        message: String,
+        data: Option<serde_json::Value>,
+    },
+
+    /// JSON serialization/deserialization errors
+    #[error("JSON error: {0}")]
+    Json(#[from] serde_json::Error),
+
+    /// YAML serialization/deserialization errors
+    #[error("YAML error: {0}")]
+    Yaml(#[from] serde_yaml::Error),
+
+    /// Kubernetes client errors
+    #[error("Kubernetes error: {0}")]
+    Kubernetes(#[from] kube::Error),
+
+    /// Kubernetes API error with status
+    #[error("Kubernetes API error: {message}")]
+    KubernetesApi {
+        status: Box<kube::core::Status>,
+        message: String,
+    },
+
+    /// Configuration errors
+    #[error("Configuration error: {0}")]
+    Config(String),
+
+    /// Tool execution errors
+    #[error("Tool error: {0}")]
+    Tool(String),
+
+    /// Read-only mode violation
+    #[error(
+        "Operation not permitted in read-only mode. Start with --read-write to enable mutations."
+    )]
+    ReadOnlyMode,
+
+    /// Resource not found
+    #[error("Resource not found: {kind}/{name} in namespace {namespace:?}")]
+    ResourceNotFound {
+        kind: String,
+        name: String,
+        namespace: Option<String>,
+    },
+
+    /// Invalid parameter errors
+    #[error("Invalid parameter: {0}")]
+    InvalidParameter(String),
+
+    /// IO errors
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+
+    /// Watch stream errors
+    #[error("Watch error: {0}")]
+    Watch(String),
+
+    /// Exec errors
+    #[error("Exec error: {0}")]
+    Exec(String),
+
+    /// Port forward errors
+    #[error("Port forward error: {0}")]
+    PortForward(String),
+
+    /// Metrics not available
+    #[error("Metrics not available: {0}")]
+    MetricsUnavailable(String),
+
+    /// Timeout errors
+    #[error("Timeout: {0}")]
+    Timeout(String),
+}
+
+/// Result type alias for k8s-mcp operations.
+pub type Result<T> = std::result::Result<T, Error>;
+
+impl Error {
+    /// Create a JSON-RPC error with standard error codes.
+    pub fn json_rpc_invalid_request(message: impl Into<String>) -> Self {
+        Error::JsonRpc {
+            code: -32600,
+            message: message.into(),
+            data: None,
+        }
+    }
+
+    /// Create a JSON-RPC method not found error.
+    pub fn json_rpc_method_not_found(method: impl Into<String>) -> Self {
+        Error::JsonRpc {
+            code: -32601,
+            message: format!("Method not found: {}", method.into()),
+            data: None,
+        }
+    }
+
+    /// Create a JSON-RPC invalid params error.
+    pub fn json_rpc_invalid_params(message: impl Into<String>) -> Self {
+        Error::JsonRpc {
+            code: -32602,
+            message: message.into(),
+            data: None,
+        }
+    }
+
+    /// Create a JSON-RPC internal error.
+    pub fn json_rpc_internal(message: impl Into<String>) -> Self {
+        Error::JsonRpc {
+            code: -32603,
+            message: message.into(),
+            data: None,
+        }
+    }
+
+    /// Get the JSON-RPC error code if this is a JSON-RPC error.
+    pub fn json_rpc_code(&self) -> i32 {
+        match self {
+            Error::JsonRpc { code, .. } => *code,
+            _ => -32603, // Internal error
+        }
+    }
+
+    /// Check if this error should be reported as a JSON-RPC error.
+    pub fn is_json_rpc_error(&self) -> bool {
+        matches!(self, Error::JsonRpc { .. })
+    }
+}
+
+impl From<kube::core::Status> for Error {
+    fn from(status: kube::core::Status) -> Self {
+        let message = status.message.clone();
+        Error::KubernetesApi {
+            status: Box::new(status),
+            message,
+        }
+    }
+}
