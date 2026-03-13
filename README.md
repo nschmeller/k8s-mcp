@@ -217,6 +217,3 @@ cargo test
 cargo clippy --all-targets --all-features -- -D warnings
 ```
 
-## License
-
-Apache-2.0
