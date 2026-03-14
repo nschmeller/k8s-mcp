@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/nschmeller/k8s-mcp/compare/v0.2.0...v0.3.0) (2026-03-14)
+
+
+### Features
+
+* add lazy initialization for Kubernetes client with graceful error handling ([cbd6f1a](https://github.com/nschmeller/k8s-mcp/commit/cbd6f1aa4925a410c9c8d7247a6884941dcd4ce1))
+
 ## [0.2.0](https://github.com/nschmeller/k8s-mcp/compare/v0.1.0...v0.2.0) (2026-03-14)
 
 
