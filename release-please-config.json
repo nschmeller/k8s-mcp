@@ -1,6 +1,7 @@
 {
   "release-type": "rust",
   "include-component-in-tag": false,
-  "skip-github-release": true,
+  "draft": true,
+  "force-tag-creation": true,
   "packages": { ".": {} }
 }
