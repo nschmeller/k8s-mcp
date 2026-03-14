@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/nschmeller/k8s-mcp/compare/v0.3.0...v0.4.0) (2026-03-14)
+
+
+### Features
+
+* set Kubernetes v1.35 as default version ([3299baf](https://github.com/nschmeller/k8s-mcp/commit/3299baf81d5e9d2e7740ccaf99f8fa8f6364ad7d))
+
 ## [0.3.0](https://github.com/nschmeller/k8s-mcp/compare/v0.2.0...v0.3.0) (2026-03-14)
 
 
