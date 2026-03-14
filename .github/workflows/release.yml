@@ -2,7 +2,7 @@ name: Release
 
 on:
   release:
-    types: [published]
+    types: [created]
 
 jobs:
   build:
@@ -76,3 +76,24 @@ jobs:
       - run: cargo publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+
+  publish-release:
+    name: Publish Release
+    needs: [build, publish-crate]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Publish Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_BODY: ${{ github.event.release.body }}
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          BODY="${RELEASE_BODY}
+
+          ---
+
+          📦 Install with cargo: \`cargo install k8s-mcp\`
+          🔗 [View on crates.io](https://crates.io/crates/k8s-mcp/${VERSION#v})"
+          gh release edit "$VERSION" --draft=false --notes "$BODY"
