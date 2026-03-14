@@ -1,10 +1,22 @@
 name: Release
 
 on:
-  release:
-    types: [created]
+  push:
+    tags:
+      - 'v*'
 
 jobs:
+  create-release:
+    name: Create Draft Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ github.ref_name }}" --draft --repo ${{ github.repository }}
+
   build:
     name: Build ${{ matrix.target }}
     permissions:
@@ -71,9 +83,19 @@ jobs:
         with:
           path: artifacts
           merge-multiple: true
-      - uses: softprops/action-gh-release@v2
-        with:
-          files: artifacts/*.tar.gz
+      - name: Upload assets and publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ github.ref_name }}"
+          BODY="📦 Install with cargo: \`cargo install k8s-mcp\`
+          🔗 [View on crates.io](https://crates.io/crates/k8s-mcp/${VERSION#v})"
+          gh release upload "$VERSION" artifacts/*.tar.gz \
+            --repo ${{ github.repository }}
+          gh release edit "$VERSION" \
+            --draft=false \
+            --notes "$BODY" \
+            --repo ${{ github.repository }}
 
   publish-crate:
     name: Publish to crates.io
@@ -93,24 +115,3 @@ jobs:
       - run: cargo publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
-
-  publish-release:
-    name: Publish Release
-    needs: [finalize, publish-crate]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Publish Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_BODY: ${{ github.event.release.body }}
-        run: |
-          VERSION="${{ github.event.release.tag_name }}"
-          BODY="${RELEASE_BODY}
-
-          ---
-
-          📦 Install with cargo: \`cargo install k8s-mcp\`
-          🔗 [View on crates.io](https://crates.io/crates/k8s-mcp/${VERSION#v})"
-          gh release edit "$VERSION" --draft=false --notes "$BODY"
