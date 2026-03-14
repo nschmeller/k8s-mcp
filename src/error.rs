@@ -117,6 +117,18 @@ pub enum Error {
     /// Timeout errors
     #[error("Timeout: {0}")]
     Timeout(String),
+
+    /// No Kubernetes context configured
+    #[error(
+        "No Kubernetes context is currently active. Use 'kubectl config use-context <context>' to set one, or specify a context via --context or K8S_CONTEXT environment variable."
+    )]
+    NoContext,
+
+    /// No Kubernetes cluster connection
+    #[error(
+        "No Kubernetes cluster connection available. Ensure a context is active and the cluster is reachable."
+    )]
+    NoClusterConnection,
 }
 
 /// Result type alias for k8s-mcp operations.

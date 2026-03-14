@@ -35,7 +35,7 @@ impl ToolHandler for PodsLogsTool {
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
 
-        let api = self.client.pods_api(namespace.as_deref());
+        let api = self.client.pods_api(namespace.as_deref()).await?;
 
         let log_params = LogParams {
             container,

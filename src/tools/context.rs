@@ -69,7 +69,7 @@ impl ContextCurrentTool {
 impl ToolHandler for ContextCurrentTool {
     async fn call(&self, _args: HashMap<String, serde_json::Value>) -> Result<CallToolResult> {
         let current = self.config.current_context()?;
-        let default_namespace = self.client.default_namespace().to_string();
+        let default_namespace = self.client.default_namespace().await;
 
         let result = json!({
             "currentContext": current,

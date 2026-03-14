@@ -149,85 +149,85 @@ impl ListResourcesTool {
         match (api_version, kind) {
             // Core v1 resources
             ("v1", "Pod") => {
-                let api = self.client.pods_api(namespace);
+                let api = self.client.pods_api(namespace).await?;
                 let pods = api.list(&params).await?;
                 Ok(format.format_pods(&pods.items))
             }
             ("v1", "Service") => {
-                let api = self.client.services_api(namespace);
+                let api = self.client.services_api(namespace).await?;
                 let services = api.list(&params).await?;
                 Ok(format.format_services(&services.items))
             }
             ("v1", "ConfigMap") => {
-                let api = self.client.configmaps_api(namespace);
+                let api = self.client.configmaps_api(namespace).await?;
                 let cms = api.list(&params).await?;
                 Ok(format.format_configmaps(&cms.items))
             }
             ("v1", "Secret") => {
-                let api = self.client.secrets_api(namespace);
+                let api = self.client.secrets_api(namespace).await?;
                 let secrets = api.list(&params).await?;
                 Ok(format.format_secrets(&secrets.items))
             }
             ("v1", "Namespace") => {
-                let api = self.client.namespaces_api();
+                let api = self.client.namespaces_api().await?;
                 let namespaces = api.list(&params).await?;
                 Ok(format.format_namespaces(&namespaces.items))
             }
             ("v1", "Node") => {
-                let api = self.client.nodes_api();
+                let api = self.client.nodes_api().await?;
                 let nodes = api.list(&params).await?;
                 Ok(format.format_nodes(&nodes.items))
             }
             ("v1", "PersistentVolumeClaim") => {
-                let api = self.client.pvcs_api(namespace);
+                let api = self.client.pvcs_api(namespace).await?;
                 let pvcs = api.list(&params).await?;
                 Ok(format.format_pvcs(&pvcs.items))
             }
             ("v1", "PersistentVolume") => {
-                let api = self.client.pvs_api();
+                let api = self.client.pvs_api().await?;
                 let pvs = api.list(&params).await?;
                 Ok(format.format_pvs(&pvs.items))
             }
             ("v1", "Event") => {
-                let api = self.client.events_api(namespace);
+                let api = self.client.events_api(namespace).await?;
                 let events = api.list(&params).await?;
                 Ok(format.format_events(&events.items))
             }
             // Apps v1 resources
             ("apps/v1", "Deployment") => {
-                let api = self.client.deployments_api(namespace);
+                let api = self.client.deployments_api(namespace).await?;
                 let deploys = api.list(&params).await?;
                 Ok(format.format_deployments(&deploys.items))
             }
             ("apps/v1", "StatefulSet") => {
-                let api = self.client.statefulsets_api(namespace);
+                let api = self.client.statefulsets_api(namespace).await?;
                 let sts = api.list(&params).await?;
                 Ok(format.format_statefulsets(&sts.items))
             }
             ("apps/v1", "DaemonSet") => {
-                let api = self.client.daemonsets_api(namespace);
+                let api = self.client.daemonsets_api(namespace).await?;
                 let ds = api.list(&params).await?;
                 Ok(format.format_daemonsets(&ds.items))
             }
             ("apps/v1", "ReplicaSet") => {
-                let api = self.client.replicasets_api(namespace);
+                let api = self.client.replicasets_api(namespace).await?;
                 let rs = api.list(&params).await?;
                 Ok(format.format_replicasets(&rs.items))
             }
             // Batch v1 resources
             ("batch/v1", "Job") => {
-                let api = self.client.jobs_api(namespace);
+                let api = self.client.jobs_api(namespace).await?;
                 let jobs = api.list(&params).await?;
                 Ok(format.format_jobs(&jobs.items))
             }
             ("batch/v1", "CronJob") => {
-                let api = self.client.cronjobs_api(namespace);
+                let api = self.client.cronjobs_api(namespace).await?;
                 let cjs = api.list(&params).await?;
                 Ok(format.format_cronjobs(&cjs.items))
             }
             // Networking v1 resources
             ("networking.k8s.io/v1", "Ingress") => {
-                let api = self.client.ingresses_api(namespace);
+                let api = self.client.ingresses_api(namespace).await?;
                 let ingresses = api.list(&params).await?;
                 Ok(format.format_ingresses(&ingresses.items))
             }
@@ -273,9 +273,9 @@ impl ToolHandler for PodsListTool {
         }
 
         let api = if all_namespaces {
-            self.client.pods_api(None)
+            self.client.pods_api(None).await?
         } else {
-            self.client.pods_api(namespace.as_deref())
+            self.client.pods_api(namespace.as_deref()).await?
         };
 
         let pods = api.list(&params).await?;
@@ -347,7 +347,7 @@ impl ToolHandler for DeploymentsListTool {
             params = params.labels(&selector);
         }
 
-        let api = self.client.deployments_api(namespace.as_deref());
+        let api = self.client.deployments_api(namespace.as_deref()).await?;
         let deploys = api.list(&params).await?;
 
         Ok(text_result(
@@ -409,7 +409,7 @@ impl ToolHandler for ServicesListTool {
             params = params.labels(&selector);
         }
 
-        let api = self.client.services_api(namespace.as_deref());
+        let api = self.client.services_api(namespace.as_deref()).await?;
         let services = api.list(&params).await?;
 
         Ok(text_result(output_format.format_services(&services.items)))
@@ -468,7 +468,7 @@ impl ToolHandler for NodesListTool {
             params = params.labels(&selector);
         }
 
-        let api = self.client.nodes_api();
+        let api = self.client.nodes_api().await?;
         let nodes = api.list(&params).await?;
 
         Ok(text_result(output_format.format_nodes(&nodes.items)))
@@ -517,7 +517,7 @@ impl ToolHandler for NamespacesListTool {
             .map(|o| OutputFormat::from(o.as_str()))
             .unwrap_or(OutputFormat::Table);
 
-        let api = self.client.namespaces_api();
+        let api = self.client.namespaces_api().await?;
         let namespaces = api.list(&ListParams::default()).await?;
 
         Ok(text_result(

@@ -35,7 +35,7 @@ impl ToolHandler for EventsListTool {
             params = params.fields(&selector);
         }
 
-        let api = self.client.events_api(namespace.as_deref());
+        let api = self.client.events_api(namespace.as_deref()).await?;
         let events = api.list(&params).await?;
 
         match output_format {

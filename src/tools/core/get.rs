@@ -105,22 +105,22 @@ impl GetResourceTool {
         match (api_version, kind) {
             // Core v1 resources
             ("v1", "Pod") => {
-                let api = self.client.pods_api(namespace);
+                let api = self.client.pods_api(namespace).await?;
                 let pod = api.get(name).await?;
                 Ok(serde_json::to_value(pod)?)
             }
             ("v1", "Service") => {
-                let api = self.client.services_api(namespace);
+                let api = self.client.services_api(namespace).await?;
                 let svc = api.get(name).await?;
                 Ok(serde_json::to_value(svc)?)
             }
             ("v1", "ConfigMap") => {
-                let api = self.client.configmaps_api(namespace);
+                let api = self.client.configmaps_api(namespace).await?;
                 let cm = api.get(name).await?;
                 Ok(serde_json::to_value(cm)?)
             }
             ("v1", "Secret") => {
-                let api = self.client.secrets_api(namespace);
+                let api = self.client.secrets_api(namespace).await?;
                 let secret = api.get(name).await?;
                 // Redact secret data for security
                 let mut value = serde_json::to_value(&secret)?;
@@ -141,60 +141,60 @@ impl GetResourceTool {
                 Ok(value)
             }
             ("v1", "Namespace") => {
-                let api = self.client.namespaces_api();
+                let api = self.client.namespaces_api().await?;
                 let ns = api.get(name).await?;
                 Ok(serde_json::to_value(ns)?)
             }
             ("v1", "Node") => {
-                let api = self.client.nodes_api();
+                let api = self.client.nodes_api().await?;
                 let node = api.get(name).await?;
                 Ok(serde_json::to_value(node)?)
             }
             ("v1", "PersistentVolumeClaim") => {
-                let api = self.client.pvcs_api(namespace);
+                let api = self.client.pvcs_api(namespace).await?;
                 let pvc = api.get(name).await?;
                 Ok(serde_json::to_value(pvc)?)
             }
             ("v1", "PersistentVolume") => {
-                let api = self.client.pvs_api();
+                let api = self.client.pvs_api().await?;
                 let pv = api.get(name).await?;
                 Ok(serde_json::to_value(pv)?)
             }
             // Apps v1 resources
             ("apps/v1", "Deployment") => {
-                let api = self.client.deployments_api(namespace);
+                let api = self.client.deployments_api(namespace).await?;
                 let deploy = api.get(name).await?;
                 Ok(serde_json::to_value(deploy)?)
             }
             ("apps/v1", "StatefulSet") => {
-                let api = self.client.statefulsets_api(namespace);
+                let api = self.client.statefulsets_api(namespace).await?;
                 let sts = api.get(name).await?;
                 Ok(serde_json::to_value(sts)?)
             }
             ("apps/v1", "DaemonSet") => {
-                let api = self.client.daemonsets_api(namespace);
+                let api = self.client.daemonsets_api(namespace).await?;
                 let ds = api.get(name).await?;
                 Ok(serde_json::to_value(ds)?)
             }
             ("apps/v1", "ReplicaSet") => {
-                let api = self.client.replicasets_api(namespace);
+                let api = self.client.replicasets_api(namespace).await?;
                 let rs = api.get(name).await?;
                 Ok(serde_json::to_value(rs)?)
             }
             // Batch v1 resources
             ("batch/v1", "Job") => {
-                let api = self.client.jobs_api(namespace);
+                let api = self.client.jobs_api(namespace).await?;
                 let job = api.get(name).await?;
                 Ok(serde_json::to_value(job)?)
             }
             ("batch/v1", "CronJob") => {
-                let api = self.client.cronjobs_api(namespace);
+                let api = self.client.cronjobs_api(namespace).await?;
                 let cj = api.get(name).await?;
                 Ok(serde_json::to_value(cj)?)
             }
             // Networking v1 resources
             ("networking.k8s.io/v1", "Ingress") => {
-                let api = self.client.ingresses_api(namespace);
+                let api = self.client.ingresses_api(namespace).await?;
                 let ing = api.get(name).await?;
                 Ok(serde_json::to_value(ing)?)
             }
@@ -226,7 +226,7 @@ impl ToolHandler for PodsGetTool {
         let name = get_string_arg(&args, "name")?;
         let namespace = get_optional_string_arg(&args, "namespace");
 
-        let api = self.client.pods_api(namespace.as_deref());
+        let api = self.client.pods_api(namespace.as_deref()).await?;
         let pod = api.get(&name).await?;
 
         let output = serde_json::to_string_pretty(&pod)?;
@@ -270,7 +270,7 @@ impl ToolHandler for DeploymentsGetTool {
         let name = get_string_arg(&args, "name")?;
         let namespace = get_optional_string_arg(&args, "namespace");
 
-        let api = self.client.deployments_api(namespace.as_deref());
+        let api = self.client.deployments_api(namespace.as_deref()).await?;
         let deploy = api.get(&name).await?;
 
         let output = serde_json::to_string_pretty(&deploy)?;
@@ -314,7 +314,7 @@ impl ToolHandler for ServicesGetTool {
         let name = get_string_arg(&args, "name")?;
         let namespace = get_optional_string_arg(&args, "namespace");
 
-        let api = self.client.services_api(namespace.as_deref());
+        let api = self.client.services_api(namespace.as_deref()).await?;
         let svc = api.get(&name).await?;
 
         let output = serde_json::to_string_pretty(&svc)?;
@@ -357,7 +357,7 @@ impl ToolHandler for NodesGetTool {
     async fn call(&self, args: HashMap<String, serde_json::Value>) -> Result<CallToolResult> {
         let name = get_string_arg(&args, "name")?;
 
-        let api = self.client.nodes_api();
+        let api = self.client.nodes_api().await?;
         let node = api.get(&name).await?;
 
         let output = serde_json::to_string_pretty(&node)?;
@@ -394,7 +394,7 @@ impl ToolHandler for NamespacesGetTool {
     async fn call(&self, args: HashMap<String, serde_json::Value>) -> Result<CallToolResult> {
         let name = get_string_arg(&args, "name")?;
 
-        let api = self.client.namespaces_api();
+        let api = self.client.namespaces_api().await?;
         let ns = api.get(&name).await?;
 
         let output = serde_json::to_string_pretty(&ns)?;

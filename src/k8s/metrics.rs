@@ -24,7 +24,8 @@ impl MetricsClient {
         debug!("Fetching node metrics");
 
         // Get node list
-        let nodes_api: Api<Node> = Api::all(self.client.inner().clone());
+        let client = self.client.inner().await?;
+        let nodes_api: Api<Node> = Api::all(client.clone());
         let nodes = nodes_api
             .list(&ListParams::default())
             .await
@@ -126,10 +127,11 @@ impl MetricsClient {
         debug!("Fetching pod metrics");
 
         // Get pod list
+        let client = self.client.inner().await?;
         let pods_api: Api<Pod> = if let Some(ns) = namespace {
-            Api::namespaced(self.client.inner().clone(), ns)
+            Api::namespaced(client.clone(), ns)
         } else {
-            Api::all(self.client.inner().clone())
+            Api::all(client.clone())
         };
 
         let mut list_params = ListParams::default();
@@ -205,7 +207,7 @@ impl MetricsClient {
     /// Fetch node metrics from metrics-server.
     async fn fetch_node_metrics(&self) -> Result<HashMap<String, NodeMetricsRaw>> {
         // Use the metrics API
-        let client = self.client.inner().clone();
+        let client = self.client.inner().await?;
 
         // Try to access metrics.k8s.io/v1beta1
         let url = "/apis/metrics.k8s.io/v1beta1/nodes";
@@ -235,7 +237,7 @@ impl MetricsClient {
         &self,
         namespace: Option<&str>,
     ) -> Result<HashMap<String, PodMetricsRaw>> {
-        let client = self.client.inner().clone();
+        let client = self.client.inner().await?;
 
         let url = if let Some(ns) = namespace {
             format!("/apis/metrics.k8s.io/v1beta1/namespaces/{}/pods", ns)

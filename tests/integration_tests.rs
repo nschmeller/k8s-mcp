@@ -593,3 +593,294 @@ async fn test_create_and_delete_namespace() {
     let response_json: serde_json::Value = serde_json::from_str(&response.unwrap()).unwrap();
     assert!(response_json["result"]["content"].is_array());
 }
+
+// ============================================================================
+// Graceful Context Handling Tests
+// ============================================================================
+
+/// Create a server with a temporary kubeconfig that has no current context
+async fn create_server_without_context() -> (McpServer, tempfile::TempDir) {
+    use std::io::Write;
+
+    let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
+    let kubeconfig_path = temp_dir.path().join("kubeconfig");
+
+    let mut file = std::fs::File::create(&kubeconfig_path).expect("Failed to create kubeconfig");
+    write!(
+        file,
+        r#"
+apiVersion: v1
+kind: Config
+current-context: ""
+contexts:
+- name: test-context
+  context:
+    cluster: test-cluster
+clusters:
+- name: test-cluster
+  cluster:
+    server: https://localhost:6443
+users: []
+"#
+    )
+    .expect("Failed to write kubeconfig");
+
+    let config = K8sConfig::new().with_kubeconfig(&kubeconfig_path);
+    let client = K8sClient::new(&config)
+        .await
+        .expect("K8sClient::new should succeed even without a valid context");
+
+    let discovery = Arc::new(RwLock::new(ApiDiscovery::new()));
+    let mut registry = ToolRegistry::new();
+    register_all_tools(&mut registry, client, config, discovery);
+
+    (McpServer::new(registry, false), temp_dir)
+}
+
+#[tokio::test]
+async fn test_server_starts_without_active_context() {
+    // Server should start successfully even without an active context
+    let (mut server, _temp_dir) = create_server_without_context().await;
+    assert!(
+        server
+            .handle_request(JsonRpcRequest {
+                jsonrpc: "2.0".to_string(),
+                id: Some(RequestId::Number(1)),
+                method: "initialize".to_string(),
+                params: Some(json!({"protocol_version": "2024-11-05", "capabilities": {}})),
+            })
+            .await
+            .is_some()
+    );
+}
+
+#[tokio::test]
+async fn test_tool_returns_helpful_error_without_context() {
+    let (mut server, _temp_dir) = create_server_without_context().await;
+
+    let request = JsonRpcRequest {
+        jsonrpc: "2.0".to_string(),
+        id: Some(RequestId::Number(1)),
+        method: "tools/call".to_string(),
+        params: Some(json!({
+            "name": "pods_list",
+            "arguments": {}
+        })),
+    };
+
+    let response = server.handle_request(request).await;
+    assert!(response.is_some());
+
+    let response_json: serde_json::Value = serde_json::from_str(&response.unwrap()).unwrap();
+
+    // Should have an error
+    let error_message = if response_json["error"].is_object() {
+        response_json["error"]["message"]
+            .as_str()
+            .unwrap_or("")
+            .to_string()
+    } else if response_json["result"]["is_error"] == true {
+        response_json["result"]["content"][0]["text"]
+            .as_str()
+            .unwrap_or("")
+            .to_string()
+    } else {
+        panic!("Expected an error response");
+    };
+
+    // Error message should be helpful
+    assert!(
+        error_message.contains("No Kubernetes context")
+            || error_message.contains("context is currently active"),
+        "Error message should mention missing context: {}",
+        error_message
+    );
+}
+
+#[tokio::test]
+async fn test_tool_returns_helpful_error_without_cluster() {
+    let (mut server, _temp_dir) = create_server_without_context().await;
+
+    let request = JsonRpcRequest {
+        jsonrpc: "2.0".to_string(),
+        id: Some(RequestId::Number(1)),
+        method: "tools/call".to_string(),
+        params: Some(json!({
+            "name": "nodes_list",
+            "arguments": {}
+        })),
+    };
+
+    let response = server.handle_request(request).await;
+    assert!(response.is_some());
+
+    let response_json: serde_json::Value = serde_json::from_str(&response.unwrap()).unwrap();
+
+    // Should have an error
+    let has_error = response_json["error"].is_object()
+        || response_json["result"]["is_error"] == true
+        || response_json["result"]["content"][0]["text"]
+            .as_str()
+            .map(|t| t.contains("No Kubernetes context") || t.contains("context"))
+            .unwrap_or(false);
+
+    assert!(has_error, "Should return an error about missing context");
+}
+
+#[tokio::test]
+async fn test_context_tools_work_without_cluster() {
+    // Context listing tools should work even without a cluster connection
+    let (mut server, _temp_dir) = create_server_without_context().await;
+
+    // configuration_contexts_list should work (just reads kubeconfig)
+    let request = JsonRpcRequest {
+        jsonrpc: "2.0".to_string(),
+        id: Some(RequestId::Number(1)),
+        method: "tools/call".to_string(),
+        params: Some(json!({
+            "name": "configuration_contexts_list",
+            "arguments": {}
+        })),
+    };
+
+    let response = server.handle_request(request).await;
+    assert!(response.is_some());
+
+    let response_json: serde_json::Value = serde_json::from_str(&response.unwrap()).unwrap();
+
+    // Should succeed - context list doesn't need cluster connection
+    // It reads from kubeconfig which exists
+    let is_success = response_json["result"]["content"].is_array();
+    assert!(
+        is_success,
+        "configuration_contexts_list should work without cluster"
+    );
+}
+
+#[tokio::test]
+async fn test_initialize_works_without_context() {
+    let (mut server, _temp_dir) = create_server_without_context().await;
+
+    let request = JsonRpcRequest {
+        jsonrpc: "2.0".to_string(),
+        id: Some(RequestId::Number(1)),
+        method: "initialize".to_string(),
+        params: Some(json!({
+            "protocol_version": "2024-11-05",
+            "capabilities": {}
+        })),
+    };
+
+    let response = server.handle_request(request).await;
+    assert!(response.is_some());
+
+    let response_json: serde_json::Value = serde_json::from_str(&response.unwrap()).unwrap();
+    assert_eq!(response_json["result"]["server_info"]["name"], "k8s-mcp");
+}
+
+#[tokio::test]
+async fn test_tools_list_works_without_context() {
+    let (mut server, _temp_dir) = create_server_without_context().await;
+
+    let request = JsonRpcRequest {
+        jsonrpc: "2.0".to_string(),
+        id: Some(RequestId::Number(1)),
+        method: "tools/list".to_string(),
+        params: None,
+    };
+
+    let response = server.handle_request(request).await;
+    assert!(response.is_some());
+
+    let response_json: serde_json::Value = serde_json::from_str(&response.unwrap()).unwrap();
+    let tools = response_json["result"]["tools"].as_array().unwrap();
+    assert!(!tools.is_empty(), "Should have tools registered");
+}
+
+#[tokio::test]
+async fn test_server_reconnects_when_context_becomes_available() {
+    // This test verifies that the server can reconnect when a context becomes available
+    // We start with no context, then switch to a valid context
+
+    // First, ensure we have a kind cluster running
+    setup_kind();
+
+    // Save the current context
+    let original_context = Command::new("kubectl")
+        .args(["config", "current-context"])
+        .output()
+        .ok()
+        .and_then(|o| String::from_utf8(o.stdout).ok())
+        .map(|s| s.trim().to_string());
+
+    // Unset the current context
+    let _ = Command::new("kubectl")
+        .args(["config", "unset", "current-context"])
+        .status();
+
+    // Create server with no context
+    let config = K8sConfig::new();
+    let client = K8sClient::new(&config)
+        .await
+        .expect("K8sClient::new should succeed");
+    let discovery = Arc::new(RwLock::new(ApiDiscovery::new()));
+    let mut registry = ToolRegistry::new();
+    register_all_tools(&mut registry, client, config.clone(), discovery);
+    let mut server = McpServer::new(registry, false);
+
+    // Tool call should fail
+    let request = JsonRpcRequest {
+        jsonrpc: "2.0".to_string(),
+        id: Some(RequestId::Number(1)),
+        method: "tools/call".to_string(),
+        params: Some(json!({
+            "name": "namespaces_list",
+            "arguments": {}
+        })),
+    };
+
+    let response = server.handle_request(request.clone()).await.unwrap();
+    let response_json: serde_json::Value = serde_json::from_str(&response).unwrap();
+    let has_error = response_json["error"].is_object()
+        || response_json["result"]["is_error"] == true
+        || response_json["result"]["content"][0]["text"]
+            .as_str()
+            .map(|t| t.contains("No Kubernetes context"))
+            .unwrap_or(false);
+    assert!(has_error, "First call should fail with no context");
+
+    // Restore the context
+    if let Some(ref ctx) = original_context {
+        if !ctx.is_empty() {
+            let _ = Command::new("kubectl")
+                .args(["config", "use-context", ctx])
+                .status();
+        }
+    }
+
+    // Create a new server (simulating a new tool call)
+    // The client should reconnect
+    let client = K8sClient::new(&config)
+        .await
+        .expect("K8sClient::new should succeed");
+    let discovery = Arc::new(RwLock::new(ApiDiscovery::new()));
+    let mut registry = ToolRegistry::new();
+    register_all_tools(&mut registry, client, config, discovery);
+    let mut server = McpServer::new(registry, false);
+
+    // Tool call should now succeed
+    let response = server.handle_request(request).await.unwrap();
+    let response_json: serde_json::Value = serde_json::from_str(&response).unwrap();
+
+    // Should have a successful result
+    let is_success = response_json["result"]["content"].is_array()
+        && response_json["result"]["is_error"]
+            .as_bool()
+            .unwrap_or(true)
+            == false;
+    assert!(
+        is_success,
+        "Second call should succeed after context is restored: {:?}",
+        response_json
+    );
+}

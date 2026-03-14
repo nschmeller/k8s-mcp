@@ -51,7 +51,7 @@ impl DynamicResource {
         name: &str,
         namespace: Option<&str>,
     ) -> Result<DynamicObject> {
-        let api = self.api_for_gvk(gvk, namespace)?;
+        let api = self.api_for_gvk(gvk, namespace).await?;
         api.get(name).await.map_err(Error::Kubernetes)
     }
 
@@ -62,7 +62,7 @@ impl DynamicResource {
         namespace: Option<&str>,
         list_params: ListParams,
     ) -> Result<ObjectList<DynamicObject>> {
-        let api = self.api_for_gvk(gvk, namespace)?;
+        let api = self.api_for_gvk(gvk, namespace).await?;
         api.list(&list_params).await.map_err(Error::Kubernetes)
     }
 
@@ -73,7 +73,7 @@ impl DynamicResource {
         namespace: Option<&str>,
         resource: DynamicObject,
     ) -> Result<DynamicObject> {
-        let api = self.api_for_gvk(gvk, namespace)?;
+        let api = self.api_for_gvk(gvk, namespace).await?;
         api.create(&PostParams::default(), &resource)
             .await
             .map_err(Error::Kubernetes)
@@ -87,7 +87,7 @@ impl DynamicResource {
         namespace: Option<&str>,
         resource: DynamicObject,
     ) -> Result<DynamicObject> {
-        let api = self.api_for_gvk(gvk, namespace)?;
+        let api = self.api_for_gvk(gvk, namespace).await?;
         api.replace(name, &PostParams::default(), &resource)
             .await
             .map_err(Error::Kubernetes)
@@ -102,7 +102,7 @@ impl DynamicResource {
         patch: &Value,
         patch_type: PatchStrategy,
     ) -> Result<DynamicObject> {
-        let api = self.api_for_gvk(gvk, namespace)?;
+        let api = self.api_for_gvk(gvk, namespace).await?;
 
         let patch = match patch_type {
             PatchStrategy::Merge => Patch::Merge(patch.clone()),
@@ -128,7 +128,7 @@ impl DynamicResource {
         namespace: Option<&str>,
         grace_period_seconds: Option<u32>,
     ) -> Result<Status> {
-        let api = self.api_for_gvk(gvk, namespace)?;
+        let api = self.api_for_gvk(gvk, namespace).await?;
 
         let mut delete_params = DeleteParams::default();
         if let Some(seconds) = grace_period_seconds {
@@ -162,7 +162,7 @@ impl DynamicResource {
         resource: &Value,
         field_manager: &str,
     ) -> Result<DynamicObject> {
-        let api = self.api_for_gvk(gvk, namespace)?;
+        let api = self.api_for_gvk(gvk, namespace).await?;
 
         let patch_params = PatchParams {
             field_manager: Some(field_manager.to_string()),
@@ -175,7 +175,7 @@ impl DynamicResource {
     }
 
     /// Create an API for the given GVK.
-    fn api_for_gvk(
+    async fn api_for_gvk(
         &self,
         gvk: &GroupVersionKind,
         namespace: Option<&str>,
@@ -186,14 +186,12 @@ impl DynamicResource {
         // For simplicity, we'll use namespace to determine scope
         let is_namespaced = namespace.is_some();
 
+        let client = self.client.inner().await?;
         let api = if is_namespaced {
-            Api::namespaced_with(
-                self.client.inner().clone(),
-                &self.client.resolve_namespace(namespace),
-                &api_resource,
-            )
+            let ns = self.client.resolve_namespace(namespace).await;
+            Api::namespaced_with(client, &ns, &api_resource)
         } else {
-            Api::all_with(self.client.inner().clone(), &api_resource)
+            Api::all_with(client, &api_resource)
         };
 
         Ok(api)

@@ -33,7 +33,8 @@ impl ToolHandler for ApiResourcesListTool {
         {
             let mut discovery = self.discovery.write().await;
             if !discovery.is_discovered() {
-                discovery.discover(self.client.inner()).await?;
+                let client = self.client.inner().await?;
+                discovery.discover(&client).await?;
             }
         }
 
@@ -132,7 +133,8 @@ impl ToolHandler for ApiVersionsTool {
         {
             let mut discovery = self.discovery.write().await;
             if !discovery.is_discovered() {
-                discovery.discover(self.client.inner()).await?;
+                let client = self.client.inner().await?;
+                discovery.discover(&client).await?;
             }
         }
 

@@ -138,58 +138,58 @@ impl DeleteResourceTool {
         match (api_version, kind) {
             // Core v1 resources
             ("v1", "Pod") => {
-                let api = self.client.pods_api(namespace);
+                let api = self.client.pods_api(namespace).await?;
                 api.delete(name, &params).await?;
             }
             ("v1", "Service") => {
-                let api = self.client.services_api(namespace);
+                let api = self.client.services_api(namespace).await?;
                 api.delete(name, &params).await?;
             }
             ("v1", "ConfigMap") => {
-                let api = self.client.configmaps_api(namespace);
+                let api = self.client.configmaps_api(namespace).await?;
                 api.delete(name, &params).await?;
             }
             ("v1", "Secret") => {
-                let api = self.client.secrets_api(namespace);
+                let api = self.client.secrets_api(namespace).await?;
                 api.delete(name, &params).await?;
             }
             ("v1", "Namespace") => {
-                let api = self.client.namespaces_api();
+                let api = self.client.namespaces_api().await?;
                 api.delete(name, &params).await?;
             }
             ("v1", "PersistentVolumeClaim") => {
-                let api = self.client.pvcs_api(namespace);
+                let api = self.client.pvcs_api(namespace).await?;
                 api.delete(name, &params).await?;
             }
             // Apps v1 resources
             ("apps/v1", "Deployment") => {
-                let api = self.client.deployments_api(namespace);
+                let api = self.client.deployments_api(namespace).await?;
                 api.delete(name, &params).await?;
             }
             ("apps/v1", "StatefulSet") => {
-                let api = self.client.statefulsets_api(namespace);
+                let api = self.client.statefulsets_api(namespace).await?;
                 api.delete(name, &params).await?;
             }
             ("apps/v1", "DaemonSet") => {
-                let api = self.client.daemonsets_api(namespace);
+                let api = self.client.daemonsets_api(namespace).await?;
                 api.delete(name, &params).await?;
             }
             ("apps/v1", "ReplicaSet") => {
-                let api = self.client.replicasets_api(namespace);
+                let api = self.client.replicasets_api(namespace).await?;
                 api.delete(name, &params).await?;
             }
             // Batch v1 resources
             ("batch/v1", "Job") => {
-                let api = self.client.jobs_api(namespace);
+                let api = self.client.jobs_api(namespace).await?;
                 api.delete(name, &params).await?;
             }
             ("batch/v1", "CronJob") => {
-                let api = self.client.cronjobs_api(namespace);
+                let api = self.client.cronjobs_api(namespace).await?;
                 api.delete(name, &params).await?;
             }
             // Networking v1 resources
             ("networking.k8s.io/v1", "Ingress") => {
-                let api = self.client.ingresses_api(namespace);
+                let api = self.client.ingresses_api(namespace).await?;
                 api.delete(name, &params).await?;
             }
             _ => {
@@ -237,7 +237,7 @@ impl ToolHandler for PodsDeleteTool {
             DeleteParams::default()
         };
 
-        let api = self.client.pods_api(namespace.as_deref());
+        let api = self.client.pods_api(namespace.as_deref()).await?;
         api.delete(&name, &params).await?;
 
         Ok(text_result(format!("Pod {} deleted successfully", name)))
@@ -294,7 +294,7 @@ impl ToolHandler for DeploymentsDeleteTool {
         let name = get_string_arg(&args, "name")?;
         let namespace = get_optional_string_arg(&args, "namespace");
 
-        let api = self.client.deployments_api(namespace.as_deref());
+        let api = self.client.deployments_api(namespace.as_deref()).await?;
         api.delete(&name, &DeleteParams::default()).await?;
 
         Ok(text_result(format!(
@@ -343,7 +343,7 @@ impl ToolHandler for NamespacesDeleteTool {
     async fn call(&self, args: HashMap<String, serde_json::Value>) -> Result<CallToolResult> {
         let name = get_string_arg(&args, "name")?;
 
-        let api = self.client.namespaces_api();
+        let api = self.client.namespaces_api().await?;
         api.delete(&name, &DeleteParams::default()).await?;
 
         Ok(text_result(format!(
