@@ -1,5 +1,6 @@
 {
   "release-type": "rust",
   "draft": true,
+  "include-component-in-tag": false,
   "packages": { ".": {} }
 }
