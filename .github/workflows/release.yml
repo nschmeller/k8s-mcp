@@ -47,6 +47,8 @@ jobs:
         run: cargo build --release --target ${{ matrix.target }}
 
       - name: Package
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           cd target/${{ matrix.target }}/release
           tar -czvf k8s-mcp-${{ matrix.target }}.tar.gz k8s-mcp
