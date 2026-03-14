@@ -7,6 +7,7 @@ pub mod events;
 pub mod logs;
 pub mod registry;
 pub mod top;
+pub mod version;
 
 pub use api_resources::{ApiResourcesListTool, ApiVersionsTool};
 pub use context::{ConfigurationViewTool, ContextCurrentTool, ContextsListTool};
@@ -20,6 +21,7 @@ pub use events::EventsListTool;
 pub use logs::PodsLogsTool;
 pub use registry::{ToolHandler, ToolRegistry};
 pub use top::{TopNodesTool, TopPodsTool};
+pub use version::KubernetesVersionTool;
 
 use crate::k8s::{ApiDiscovery, K8sClient, K8sConfig};
 use std::sync::Arc;
@@ -35,7 +37,7 @@ pub fn register_all_tools(
     let client = Arc::new(client);
 
     // Core get tools
-    registry.register(GetResourceTool::new(client.clone()));
+    registry.register(GetResourceTool::new(client.clone(), discovery.clone()));
     registry.register(PodsGetTool::new(client.clone()));
     registry.register(DeploymentsGetTool::new(client.clone()));
     registry.register(ServicesGetTool::new(client.clone()));
@@ -43,7 +45,7 @@ pub fn register_all_tools(
     registry.register(NamespacesGetTool::new(client.clone()));
 
     // Core list tools
-    registry.register(ListResourcesTool::new(client.clone()));
+    registry.register(ListResourcesTool::new(client.clone(), discovery.clone()));
     registry.register(PodsListTool::new(client.clone()));
     registry.register(DeploymentsListTool::new(client.clone()));
     registry.register(ServicesListTool::new(client.clone()));
@@ -51,7 +53,7 @@ pub fn register_all_tools(
     registry.register(NamespacesListTool::new(client.clone()));
 
     // Core delete tools
-    registry.register(DeleteResourceTool::new(client.clone()));
+    registry.register(DeleteResourceTool::new(client.clone(), discovery.clone()));
     registry.register(PodsDeleteTool::new(client.clone()));
     registry.register(DeploymentsDeleteTool::new(client.clone()));
     registry.register(NamespacesDeleteTool::new(client.clone()));
@@ -73,5 +75,8 @@ pub fn register_all_tools(
 
     // API discovery tools
     registry.register(ApiResourcesListTool::new(client.clone(), discovery.clone()));
-    registry.register(ApiVersionsTool::new(client, discovery));
+    registry.register(ApiVersionsTool::new(client.clone(), discovery.clone()));
+
+    // Version tool
+    registry.register(KubernetesVersionTool::new(client));
 }

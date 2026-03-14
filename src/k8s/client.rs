@@ -2,6 +2,7 @@
 
 use crate::error::{Error, Result};
 use crate::k8s::config::K8sConfig;
+use crate::k8s::version::K8sVersion;
 use k8s_openapi::api::apps::v1::{DaemonSet, Deployment, ReplicaSet, StatefulSet};
 use k8s_openapi::api::batch::v1::{CronJob, Job};
 use k8s_openapi::api::core::v1::Event;
@@ -17,6 +18,8 @@ use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 
 /// State of the Kubernetes client connection.
+// Allow large enum variant since the Connected state is inherently larger
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone)]
 enum ClientState {
     /// Client is connected and ready
@@ -24,6 +27,7 @@ enum ClientState {
         client: Client,
         default_namespace: String,
         current_context: Option<String>,
+        version: Option<K8sVersion>,
     },
     /// No context is configured
     NoContext,
@@ -97,24 +101,39 @@ impl K8sClient {
     /// Connect using in-cluster service account.
     async fn connect_in_cluster(&self) -> ClientState {
         info!("Running in-cluster, using service account");
-        Client::try_default().await.map_or_else(
-            |e| {
-                let error = format!("Failed to create in-cluster client: {}", e);
-                warn!("{}", error);
-                ClientState::ConnectionFailed { error }
-            },
-            |client| {
+        match Client::try_default().await {
+            Ok(client) => {
                 let namespace = std::env::var("POD_NAMESPACE")
                     .or_else(|_| std::env::var("KUBERNETES_NAMESPACE"))
                     .unwrap_or_else(|_| "default".to_string());
-                info!("Kubernetes client initialized, namespace: {}", namespace);
+
+                // Detect Kubernetes version
+                let version = K8sVersion::detect(&client).await.ok();
+                if let Some(ref v) = version {
+                    info!(
+                        "Kubernetes client initialized, namespace: {}, version: {}",
+                        namespace, v
+                    );
+                } else {
+                    info!(
+                        "Kubernetes client initialized, namespace: {} (version detection failed)",
+                        namespace
+                    );
+                }
+
                 ClientState::Connected {
                     client,
                     default_namespace: namespace,
                     current_context: None,
+                    version,
                 }
-            },
-        )
+            }
+            Err(e) => {
+                let error = format!("Failed to create in-cluster client: {}", e);
+                warn!("{}", error);
+                ClientState::ConnectionFailed { error }
+            }
+        }
     }
 
     /// Connect from kubeconfig file.
@@ -152,14 +171,25 @@ impl K8sClient {
         match Config::from_custom_kubeconfig(kubeconfig, &options).await {
             Ok(config) => match Client::try_from(config) {
                 Ok(client) => {
-                    info!(
-                        "Kubernetes client initialized, default namespace: {}, context: {:?}",
-                        default_namespace, current_context
-                    );
+                    // Detect Kubernetes version
+                    let version = K8sVersion::detect(&client).await.ok();
+                    if let Some(ref v) = version {
+                        info!(
+                            "Kubernetes client initialized, default namespace: {}, context: {:?}, version: {}",
+                            default_namespace, current_context, v
+                        );
+                    } else {
+                        info!(
+                            "Kubernetes client initialized, default namespace: {}, context: {:?} (version detection failed)",
+                            default_namespace, current_context
+                        );
+                    }
+
                     ClientState::Connected {
                         client,
                         default_namespace,
                         current_context,
+                        version,
                     }
                 }
                 Err(e) => {
@@ -186,8 +216,16 @@ impl K8sClient {
     pub async fn connection_status(&self) -> String {
         let state = self.state.read().await;
         match state.as_ref() {
-            Some(ClientState::Connected { current_context, .. }) => {
-                format!("Connected to context: {:?}", current_context)
+            Some(ClientState::Connected {
+                current_context,
+                version,
+                ..
+            }) => {
+                let version_str = version
+                    .as_ref()
+                    .map(|v| format!(" (Kubernetes {})", v))
+                    .unwrap_or_default();
+                format!("Connected to context: {:?}{}", current_context, version_str)
             }
             Some(ClientState::NoContext) => {
                 "No Kubernetes context is active. Use 'kubectl config use-context <context>' to set one.".to_string()
@@ -196,6 +234,17 @@ impl K8sClient {
                 format!("Connection failed: {}", error)
             }
             None => "Not initialized".to_string(),
+        }
+    }
+
+    /// Get the detected Kubernetes version.
+    ///
+    /// Returns `None` if not connected or version detection failed.
+    pub async fn kubernetes_version(&self) -> Option<K8sVersion> {
+        let state = self.state.read().await;
+        match state.as_ref() {
+            Some(ClientState::Connected { version, .. }) => version.clone(),
+            _ => None,
         }
     }
 
@@ -231,6 +280,7 @@ impl K8sClient {
                 client,
                 default_namespace,
                 current_context: None,
+                version: None, // Version will be None for manually created clients
             }))),
             config: K8sConfig::new(),
         }

@@ -1,7 +1,7 @@
 //! Delete resources tool implementation.
 
-use crate::error::{Error, Result};
-use crate::k8s::K8sClient;
+use crate::error::Result;
+use crate::k8s::{AdaptiveResource, K8sClient, parse_api_version};
 use crate::mcp::protocol::{CallToolResult, PropertySchema, Tool, ToolInputSchema};
 use crate::tools::registry::{
     ToolHandler, get_optional_integer_arg, get_optional_string_arg, get_string_arg, text_result,
@@ -11,15 +11,19 @@ use kube::api::DeleteParams;
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
+use tokio::sync::RwLock;
+
+use crate::k8s::ApiDiscovery;
 
 /// Delete a resource tool.
 pub struct DeleteResourceTool {
     client: Arc<K8sClient>,
+    discovery: Arc<RwLock<ApiDiscovery>>,
 }
 
 impl DeleteResourceTool {
-    pub fn new(client: Arc<K8sClient>) -> Self {
-        DeleteResourceTool { client }
+    pub fn new(client: Arc<K8sClient>, discovery: Arc<RwLock<ApiDiscovery>>) -> Self {
+        DeleteResourceTool { client, discovery }
     }
 }
 
@@ -192,11 +196,13 @@ impl DeleteResourceTool {
                 let api = self.client.ingresses_api(namespace).await?;
                 api.delete(name, &params).await?;
             }
+            // Use adaptive API for all other resource types
             _ => {
-                return Err(Error::InvalidParameter(format!(
-                    "Unsupported resource type: {}/{}",
-                    api_version, kind
-                )));
+                let gvk = parse_api_version(api_version, kind);
+                let adaptive = AdaptiveResource::new(self.client.clone(), self.discovery.clone());
+                adaptive
+                    .delete(&gvk, name, namespace, params.grace_period_seconds)
+                    .await?;
             }
         }
 

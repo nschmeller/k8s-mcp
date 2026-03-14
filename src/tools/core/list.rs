@@ -2,7 +2,7 @@
 
 use crate::error::Result;
 use crate::format::OutputFormat;
-use crate::k8s::K8sClient;
+use crate::k8s::{AdaptiveResource, K8sClient, parse_api_version};
 use crate::mcp::protocol::{CallToolResult, PropertySchema, Tool, ToolInputSchema};
 use crate::tools::registry::{
     ToolHandler, get_optional_integer_arg, get_optional_string_arg, text_result,
@@ -12,15 +12,19 @@ use kube::api::ListParams;
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
+use tokio::sync::RwLock;
+
+use crate::k8s::ApiDiscovery;
 
 /// List resources tool.
 pub struct ListResourcesTool {
     client: Arc<K8sClient>,
+    discovery: Arc<RwLock<ApiDiscovery>>,
 }
 
 impl ListResourcesTool {
-    pub fn new(client: Arc<K8sClient>) -> Self {
-        ListResourcesTool { client }
+    pub fn new(client: Arc<K8sClient>, discovery: Arc<RwLock<ApiDiscovery>>) -> Self {
+        ListResourcesTool { client, discovery }
     }
 }
 
@@ -231,10 +235,14 @@ impl ListResourcesTool {
                 let ingresses = api.list(&params).await?;
                 Ok(format.format_ingresses(&ingresses.items))
             }
-            _ => Err(crate::error::Error::InvalidParameter(format!(
-                "Unsupported resource type: {}/{}",
-                api_version, kind
-            ))),
+            // Use adaptive API for all other resource types
+            _ => {
+                let gvk = parse_api_version(api_version, kind);
+                let adaptive = AdaptiveResource::new(self.client.clone(), self.discovery.clone());
+                let resources = adaptive.list(&gvk, namespace, params).await?;
+                // For unknown types, return JSON format
+                Ok(serde_json::to_string_pretty(&resources)?)
+            }
         }
     }
 }

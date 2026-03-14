@@ -1,22 +1,26 @@
 //! Get resource tool implementation.
 
-use crate::error::{Error, Result};
-use crate::k8s::K8sClient;
+use crate::error::Result;
+use crate::k8s::{AdaptiveResource, K8sClient, parse_api_version};
 use crate::mcp::protocol::{CallToolResult, PropertySchema, Tool, ToolInputSchema};
 use crate::tools::registry::{ToolHandler, get_optional_string_arg, get_string_arg, text_result};
 use async_trait::async_trait;
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
+use tokio::sync::RwLock;
+
+use crate::k8s::ApiDiscovery;
 
 /// Get a specific resource by name.
 pub struct GetResourceTool {
     client: Arc<K8sClient>,
+    discovery: Arc<RwLock<ApiDiscovery>>,
 }
 
 impl GetResourceTool {
-    pub fn new(client: Arc<K8sClient>) -> Self {
-        GetResourceTool { client }
+    pub fn new(client: Arc<K8sClient>, discovery: Arc<RwLock<ApiDiscovery>>) -> Self {
+        GetResourceTool { client, discovery }
     }
 }
 
@@ -102,8 +106,9 @@ impl GetResourceTool {
         name: &str,
         namespace: Option<&str>,
     ) -> Result<serde_json::Value> {
+        // Use typed APIs for known types (for better performance and special handling)
         match (api_version, kind) {
-            // Core v1 resources
+            // Core v1 resources with typed handling
             ("v1", "Pod") => {
                 let api = self.client.pods_api(namespace).await?;
                 let pod = api.get(name).await?;
@@ -124,13 +129,11 @@ impl GetResourceTool {
                 let secret = api.get(name).await?;
                 // Redact secret data for security
                 let mut value = serde_json::to_value(&secret)?;
-                // Redact binary data
                 if let Some(data) = value.get_mut("data").and_then(|d| d.as_object_mut()) {
                     for (_key, val) in data.iter_mut() {
                         *val = json!("REDACTED");
                     }
                 }
-                // Redact string data
                 if let Some(string_data) =
                     value.get_mut("stringData").and_then(|d| d.as_object_mut())
                 {
@@ -198,12 +201,12 @@ impl GetResourceTool {
                 let ing = api.get(name).await?;
                 Ok(serde_json::to_value(ing)?)
             }
+            // Use adaptive API for all other resource types
             _ => {
-                // Try dynamic resource lookup
-                Err(Error::InvalidParameter(format!(
-                    "Unsupported resource type: {}/{}",
-                    api_version, kind
-                )))
+                let gvk = parse_api_version(api_version, kind);
+                let adaptive = AdaptiveResource::new(self.client.clone(), self.discovery.clone());
+                let resource = adaptive.get(&gvk, name, namespace).await?;
+                Ok(serde_json::to_value(resource)?)
             }
         }
     }

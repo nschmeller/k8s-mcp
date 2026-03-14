@@ -11,6 +11,8 @@ A Kubernetes MCP (Model Context Protocol) server for Claude Code. This server pr
 - **Resource operations**: Get, list, and delete Kubernetes resources
 - **Metrics support**: View resource consumption with `top` commands
 - **Log streaming**: Fetch logs from pods and containers
+- **Runtime version detection**: Automatically detects and adapts to any Kubernetes 1.31+ cluster
+- **Adaptive resource handling**: Works with CRDs and custom resources without recompilation
 
 ## Installation
 
@@ -141,6 +143,7 @@ If you need to configure manually, add to `~/.claude.json`:
 | `configuration_view` | View kubeconfig contents |
 | `api_resources_list` | List available API resources |
 | `api_versions` | List available API versions |
+| `kubernetes_version` | Get the Kubernetes cluster version information |
 
 ## Example Usage in Claude Code
 

@@ -129,6 +129,45 @@ pub enum Error {
         "No Kubernetes cluster connection available. Ensure a context is active and the cluster is reachable."
     )]
     NoClusterConnection,
+
+    /// Kubernetes version mismatch
+    #[error("Kubernetes version mismatch: server is {current}, but feature requires {required}")]
+    VersionMismatch {
+        /// Current cluster version
+        current: String,
+        /// Required minimum version
+        required: String,
+    },
+
+    /// Feature not available in current Kubernetes version
+    #[error(
+        "Feature '{feature}' requires Kubernetes v{required_major}.{required_minor}+, cluster is v{current_major}.{current_minor}"
+    )]
+    FeatureNotAvailable {
+        /// Feature name
+        feature: String,
+        /// Required major version
+        required_major: u32,
+        /// Required minor version
+        required_minor: u32,
+        /// Current major version
+        current_major: u32,
+        /// Current minor version
+        current_minor: u32,
+    },
+
+    /// Resource scope mismatch
+    #[error(
+        "Resource scope mismatch: {kind} is {expected_scope}, but {actual_scope} scope was requested"
+    )]
+    ResourceScopeMismatch {
+        /// Resource kind
+        kind: String,
+        /// Expected scope
+        expected_scope: String,
+        /// Actual scope provided
+        actual_scope: String,
+    },
 }
 
 /// Result type alias for k8s-mcp operations.
@@ -192,5 +231,109 @@ impl From<kube::core::Status> for Error {
             status: Box::new(status),
             message,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_version_mismatch_error() {
+        let error = Error::VersionMismatch {
+            current: "v1.28.0".to_string(),
+            required: "v1.30.0".to_string(),
+        };
+
+        let message = error.to_string();
+        assert!(message.contains("v1.28.0"));
+        assert!(message.contains("v1.30.0"));
+        assert!(message.contains("version mismatch"));
+    }
+
+    #[test]
+    fn test_feature_not_available_error() {
+        let error = Error::FeatureNotAvailable {
+            feature: "PodSecurityPolicies".to_string(),
+            required_major: 1,
+            required_minor: 25,
+            current_major: 1,
+            current_minor: 22,
+        };
+
+        let message = error.to_string();
+        assert!(message.contains("PodSecurityPolicies"));
+        assert!(message.contains("v1.25"));
+        assert!(message.contains("v1.22"));
+    }
+
+    #[test]
+    fn test_resource_scope_mismatch_error() {
+        let error = Error::ResourceScopeMismatch {
+            kind: "Namespace".to_string(),
+            expected_scope: "cluster-scoped".to_string(),
+            actual_scope: "namespaced".to_string(),
+        };
+
+        let message = error.to_string();
+        assert!(message.contains("Namespace"));
+        assert!(message.contains("cluster-scoped"));
+        assert!(message.contains("namespaced"));
+    }
+
+    #[test]
+    fn test_error_display() {
+        // Test that all error variants implement Display correctly
+        let errors: Vec<Error> = vec![
+            Error::Protocol("test".to_string()),
+            Error::Config("test config".to_string()),
+            Error::Tool("test tool".to_string()),
+            Error::ReadOnlyMode,
+            Error::NoContext,
+            Error::NoClusterConnection,
+            Error::VersionMismatch {
+                current: "v1".to_string(),
+                required: "v2".to_string(),
+            },
+            Error::FeatureNotAvailable {
+                feature: "test".to_string(),
+                required_major: 1,
+                required_minor: 30,
+                current_major: 1,
+                current_minor: 28,
+            },
+            Error::ResourceScopeMismatch {
+                kind: "Test".to_string(),
+                expected_scope: "cluster".to_string(),
+                actual_scope: "namespace".to_string(),
+            },
+        ];
+
+        for error in errors {
+            // Just ensure to_string() doesn't panic
+            let _ = error.to_string();
+        }
+    }
+
+    #[test]
+    fn test_json_rpc_code_for_non_json_rpc_errors() {
+        // Non-JSON-RPC errors should return internal error code
+        assert_eq!(Error::NoContext.json_rpc_code(), -32603);
+        assert_eq!(Error::ReadOnlyMode.json_rpc_code(), -32603);
+        assert_eq!(
+            Error::VersionMismatch {
+                current: "v1".to_string(),
+                required: "v2".to_string()
+            }
+            .json_rpc_code(),
+            -32603
+        );
+    }
+
+    #[test]
+    fn test_is_json_rpc_error() {
+        assert!(Error::json_rpc_invalid_params("test").is_json_rpc_error());
+        assert!(!Error::NoContext.is_json_rpc_error());
+        assert!(!Error::ReadOnlyMode.is_json_rpc_error());
     }
 }
