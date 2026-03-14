@@ -6,17 +6,6 @@ on:
       - 'v*'
 
 jobs:
-  create-release:
-    name: Create Draft Release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Create draft release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create "${{ github.ref_name }}" --draft --repo ${{ github.repository }}
-
   build:
     name: Build ${{ matrix.target }}
     permissions:
@@ -27,16 +16,12 @@ jobs:
         include:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
-            archive: tar.gz
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
-            archive: tar.gz
           - target: x86_64-apple-darwin
             os: macos-latest
-            archive: tar.gz
           - target: aarch64-apple-darwin
             os: macos-latest
-            archive: tar.gz
 
     steps:
       - uses: actions/checkout@v4
@@ -64,45 +49,14 @@ jobs:
       - name: Package
         run: |
           cd target/${{ matrix.target }}/release
-          if [ "${{ matrix.archive }}" = "tar.gz" ]; then
-            tar -czvf k8s-mcp-${{ matrix.target }}.tar.gz k8s-mcp
-          fi
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: k8s-mcp-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/k8s-mcp-${{ matrix.target }}.tar.gz
-          retention-days: 1
-
-  finalize:
-    name: Upload Release Assets
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          merge-multiple: true
-      - name: Upload assets and publish release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          VERSION="${{ github.ref_name }}"
-          BODY="📦 Install with cargo: \`cargo install k8s-mcp\`
-          🔗 [View on crates.io](https://crates.io/crates/k8s-mcp/${VERSION#v})"
-          gh release upload "$VERSION" artifacts/*.tar.gz \
-            --repo ${{ github.repository }}
-          gh release edit "$VERSION" \
-            --draft=false \
-            --notes "$BODY" \
+          tar -czvf k8s-mcp-${{ matrix.target }}.tar.gz k8s-mcp
+          gh release upload "${{ github.ref_name }}" \
+            k8s-mcp-${{ matrix.target }}.tar.gz \
             --repo ${{ github.repository }}
 
   publish-crate:
     name: Publish to crates.io
-    needs: finalize
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       id-token: write
