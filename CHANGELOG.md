@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/nschmeller/k8s-mcp/compare/v0.5.0...v0.6.0) (2026-03-14)
+
+
+### Features
+
+* add runtime Kubernetes version detection and adaptive resource handling ([64fc9f2](https://github.com/nschmeller/k8s-mcp/commit/64fc9f22e92569108e5153ab468b565499bc8665))
+
 ## [0.5.0](https://github.com/nschmeller/k8s-mcp/compare/v0.4.0...v0.5.0) (2026-03-14)
 
 
