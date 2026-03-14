@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/nschmeller/k8s-mcp/compare/v0.1.0...v0.2.0) (2026-03-14)
+
+
+### Features
+
+* add support for Kubernetes v1.34 and v1.35 ([20c6ea3](https://github.com/nschmeller/k8s-mcp/commit/20c6ea35c13a6168e3744b00ee27c1e2877db6cc))
+
 ## 0.1.0 (2026-03-13)
 
 
